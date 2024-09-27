@@ -1,0 +1,72 @@
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+import openpyxl
+
+# Step 1: Load Patient Data (Replace this with actual Excel data loading)
+# For demonstration purposes, creating a sample DataFrame with clinical indicators
+np.random.seed(42)
+num_patients = 5000
+patient_df = pd.DataFrame({
+    'Age': np.random.randint(20, 80, num_patients),
+    'Height_cm': np.random.uniform(150, 190, num_patients),
+    'Weight_kg': np.random.uniform(50, 100, num_patients),
+    'BMI': np.random.uniform(18, 35, num_patients),
+    'Hb': np.random.uniform(12, 18, num_patients),
+    'Hct': np.random.uniform(35, 50, num_patients),
+    'Alb': np.random.uniform(3.5, 5.5, num_patients),
+    'AST': np.random.uniform(10, 40, num_patients),
+    'ALT': np.random.uniform(7, 56, num_patients),
+    'ALP': np.random.uniform(30, 120, num_patients),
+    'Cre': np.random.uniform(0.6, 1.3, num_patients),
+    'Glu': np.random.uniform(70, 100, num_patients),
+    'TG': np.random.uniform(50, 150, num_patients),
+    'HDL': np.random.uniform(40, 60, num_patients),
+    'LDL': np.random.uniform(70, 130, num_patients),
+    'LH': np.random.uniform(1, 10, num_patients),
+    'FSH': np.random.uniform(1, 10, num_patients),
+    'CRP': np.random.uniform(0, 1, num_patients),
+    'TT': np.random.uniform(300, 1000, num_patients)
+})
+
+# Step 2: Handle Missing Values by Mean Imputation
+patient_df.fillna(patient_df.mean(), inplace=True)
+
+# Step 3: Standardize the Data
+scaler = StandardScaler()
+standardized_data = scaler.fit_transform(patient_df)
+
+# Step 4: Perform PCA
+pca = PCA(n_components=2)  # Reducing to 2 components for visualization
+pca_components = pca.fit_transform(standardized_data)
+explained_variance = pca.explained_variance_ratio_
+
+# Add PCA results to the DataFrame
+patient_df['PCA1'] = pca_components[:, 0]
+patient_df['PCA2'] = pca_components[:, 1]
+
+# Step 5: Apply K-Means Clustering (Using K=4 as per elbow method)
+optimal_k = 4
+kmeans = KMeans(n_clusters=optimal_k, random_state=42)
+patient_df['Cluster'] = kmeans.fit_predict(standardized_data)
+
+# Step 6: Visualize PCA Results with Clustering
+plt.figure(figsize=(12, 8))
+scatter = plt.scatter(patient_df['PCA1'], patient_df['PCA2'], c=patient_df['Cluster'], cmap='viridis', marker='o')
+plt.title('PCA and K-Means Clustering Visualization', fontsize=16)
+plt.xlabel('PCA1', fontsize=12)
+plt.ylabel('PCA2', fontsize=12)
+plt.colorbar(label='Cluster')
+plt.ylim([-5, 20])  # Scale the PCA2 axis as described
+plt.grid(True)
+plt.show()
+
+# Step 7: Export Results to an Excel File
+output_df = patient_df[['Age', 'Cluster', 'PCA1', 'PCA2']]
+output_df.to_excel('/mnt/data/pca_clustering_results.xlsx', index=False)
+
+# Display information about explained variance
+print(f'Explained variance by PCA1 and PCA2: {explained_variance[0]:.2f}, {explained_variance[1]:.2f}')
