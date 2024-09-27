@@ -1,0 +1,88 @@
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+import networkx as nx
+from sklearn.preprocessing import StandardScaler
+from scipy.stats import pearsonr
+
+# Step 1: Load the dataset
+# Assume patient_df is the dataframe that contains all the physiological data along with clusters and TT levels
+np.random.seed(42)
+num_patients = 5000
+patient_df = pd.DataFrame({
+    'Cluster': np.random.choice([0, 1, 2, 3], num_patients),
+    'Age': np.random.randint(20, 80, num_patients),
+    'BMI': np.random.uniform(18, 35, num_patients),
+    'Hb': np.random.uniform(12, 18, num_patients),
+    'Hct': np.random.uniform(35, 50, num_patients),
+    'ALT': np.random.uniform(7, 56, num_patients),
+    'AST': np.random.uniform(10, 40, num_patients),
+    'HDL': np.random.uniform(40, 60, num_patients),
+    'LDL': np.random.uniform(70, 130, num_patients),
+    'Cre': np.random.uniform(0.6, 1.3, num_patients),
+    'FSH': np.random.uniform(1, 10, num_patients),
+    'TT': np.random.uniform(0.04, 30.2, num_patients)  # Testosterone levels in ng/mL
+})
+
+# Step 2: Categorize TT into four quantiles (Q1, Q2, Q3, Q4)
+patient_df['TT_Category'] = pd.qcut(patient_df['TT'], 4, labels=['Q1', 'Q2', 'Q3', 'Q4'])
+
+# Step 3: Calculate correlations within each cluster and store results
+correlation_results = {}
+for cluster in range(4):
+    cluster_data = patient_df[patient_df['Cluster'] == cluster]
+    corr_matrix = cluster_data.corr(method='pearson')
+    correlation_results[cluster] = corr_matrix
+
+    # Step 4: Plotting Correlation Matrix for the cluster
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', center=0)
+    plt.title(f'Correlation Matrix for Cluster {cluster}')
+    plt.show()
+
+# Step 5: Graph Theory Analysis - Visualize variable topology in each cluster
+for cluster in range(4):
+    cluster_data = patient_df[patient_df['Cluster'] == cluster]
+    
+    # Calculate correlations
+    corr_matrix = cluster_data.corr()
+    G = nx.Graph()
+    
+    # Add nodes
+    variables = list(cluster_data.columns)
+    variables.remove('Cluster')
+    for var in variables:
+        G.add_node(f"{var}({cluster})")
+    
+    # Add edges for strong correlations (|r| > 0.2)
+    for i, var1 in enumerate(variables):
+        for j, var2 in enumerate(variables):
+            if i < j:
+                r, _ = pearsonr(cluster_data[var1], cluster_data[var2])
+                if abs(r) > 0.2:
+                    G.add_edge(f"{var1}({cluster})", f"{var2}({cluster})", weight=abs(r))
+    
+    # Node size based on degree (number of connections)
+    node_sizes = [100 * nx.degree(G, n) for n in G.nodes()]
+    
+    # Draw the network
+    plt.figure(figsize=(12, 10))
+    pos = nx.spring_layout(G, seed=42)  # Layout for nodes
+    nx.draw_networkx_nodes(G, pos, node_size=node_sizes, node_color='skyblue', alpha=0.7)
+    nx.draw_networkx_edges(G, pos, width=1.0, alpha=0.5)
+    nx.draw_networkx_labels(G, pos, font_size=10, font_family='sans-serif')
+    
+    plt.title(f'Network Topology for Cluster {cluster}')
+    plt.show()
+
+# Step 6: Exporting Correlation Data to CSV
+for cluster, corr_matrix in correlation_results.items():
+    corr_matrix.to_csv(f'/mnt/data/cluster_{cluster}_correlation_matrix.csv')
+
+# Step 7: Summary of key findings (print some example statistics)
+for cluster in range(4):
+    print(f"\nCluster {cluster} Summary:")
+    cluster_data = patient_df[patient_df['Cluster'] == cluster]
+    print(f"Age and TT Correlation: {pearsonr(cluster_data['Age'], cluster_data['TT'])[0]:.2f}")
+    print(f"BMI and TT Correlation: {pearsonr(cluster_data['BMI'], cluster_data['TT'])[0]:.2f}")
