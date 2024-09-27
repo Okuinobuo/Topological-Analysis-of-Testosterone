@@ -1,0 +1,88 @@
+import pandas as pd
+import numpy as np
+from scipy.cluster.hierarchy import dendrogram, linkage
+from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+
+# Step 1: Load Patient Data (Replace this part with your actual data loading mechanism)
+# For demonstration, we'll create a sample DataFrame with clinical indicators.
+np.random.seed(42)
+num_patients = 100
+patient_df = pd.DataFrame({
+    'Age': np.random.randint(20, 80, num_patients),
+    'Height_cm': np.random.uniform(150, 190, num_patients),
+    'Weight_kg': np.random.uniform(50, 100, num_patients),
+    'BMI': np.random.uniform(18, 35, num_patients),
+    'Hb': np.random.uniform(12, 18, num_patients),
+    'Hct': np.random.uniform(35, 50, num_patients),
+    'Alb': np.random.uniform(3.5, 5.5, num_patients),
+    'AST': np.random.uniform(10, 40, num_patients),
+    'ALT': np.random.uniform(7, 56, num_patients),
+    'ALP': np.random.uniform(30, 120, num_patients),
+    'Cre': np.random.uniform(0.6, 1.3, num_patients),
+    'Glu': np.random.uniform(70, 100, num_patients),
+    'TG': np.random.uniform(50, 150, num_patients),
+    'HDL': np.random.uniform(40, 60, num_patients),
+    'LDL': np.random.uniform(70, 130, num_patients),
+    'LH': np.random.uniform(1, 10, num_patients),
+    'FSH': np.random.uniform(1, 10, num_patients),
+    'CRP': np.random.uniform(0, 1, num_patients),
+    'TT': np.random.uniform(300, 1000, num_patients)
+})
+
+# Step 2: Data Preprocessing
+# Inspect the data for missing values
+print("Missing values in the dataset:\n", patient_df.isnull().sum())
+
+# Handle missing values (if any). Here we use mean imputation as an example.
+patient_df.fillna(patient_df.mean(), inplace=True)
+
+# Step 3: Standardize the Data using Z-scores
+# Use StandardScaler to ensure that each clinical indicator contributes equally to clustering
+scaler = StandardScaler()
+standardized_data = scaler.fit_transform(patient_df)
+
+# Step 4: Perform Hierarchical Clustering using Ward's method
+# 'ward' minimizes the variance of the clusters being merged.
+linked = linkage(standardized_data, method='ward', metric='euclidean')
+
+# Step 5: Plot the Dendrogram with customizations
+plt.figure(figsize=(15, 7))
+dendrogram(
+    linked,
+    orientation='top',
+    distance_sort='ascending',
+    show_leaf_counts=True,
+    leaf_rotation=90,  # Rotate patient labels for better readability
+    leaf_font_size=8,  # Smaller font for leaves to avoid overlap
+    color_threshold=20  # Draw horizontal lines at specified distance to separate clusters
+)
+
+# Customizations for better visualization
+plt.title('Hierarchical Clustering Dendrogram', fontsize=16)
+plt.xlabel('Patient Index or Label', fontsize=12)
+plt.ylabel('Euclidean Distance', fontsize=12)
+
+# Adding grid lines for better interpretability
+plt.grid(True, which='both', linestyle='--', linewidth=0.5)
+
+# Step 6: Optional - Annotate significant clusters in the dendrogram
+max_d = 20  # Max distance threshold to define clusters
+plt.axhline(y=max_d, c='black', linestyle='--', linewidth=1)  # Draw line to show cutoff for clusters
+
+# Display the dendrogram
+plt.show()
+
+# Step 7: Extract cluster labels for further analysis (if needed)
+from scipy.cluster.hierarchy import fcluster
+# Get cluster labels based on the specified max distance (threshold)
+cluster_labels = fcluster(linked, max_d, criterion='distance')
+
+# Append cluster labels to the original DataFrame for further analysis
+patient_df['Cluster'] = cluster_labels
+
+# Display a sample of the data with cluster labels
+print(patient_df.head())
+
+# Save the resulting DataFrame with cluster labels if needed
+# patient_df.to_csv('clustered_patient_data.csv', index=False)
