@@ -1,0 +1,46 @@
+Data Collection 
+import pandas as pd
+import numpy as np
+
+# Function to calculate BMI
+def calculate_bmi(height_cm, weight_kg):
+    height_m = height_cm / 100
+    return weight_kg / (height_m ** 2)
+
+# Simulate blood test measurements
+def collect_blood_data(num_patients):
+    # Create a dictionary to hold all patient data
+    patient_data = {
+        'Height_cm': np.random.uniform(150, 190, num_patients),  # Random height between 150 cm and 190 cm
+        'Weight_kg': np.random.uniform(50, 100, num_patients),  # Random weight between 50 kg and 100 kg
+        'Hb': np.random.uniform(12, 18, num_patients),  # Random Hemoglobin levels
+        'Hct': np.random.uniform(35, 50, num_patients),  # Random Hematocrit levels
+        'LH': np.random.uniform(1, 10, num_patients),  # Random Luteinizing hormone levels
+        'FSH': np.random.uniform(1, 10, num_patients),  # Random Follicle-stimulating hormone levels
+        'ALP': np.random.uniform(30, 120, num_patients),  # Random Alkaline phosphatase levels
+        'ALB': np.random.uniform(3.5, 5.5, num_patients),  # Random Albumin levels
+        'Cre': np.random.uniform(0.6, 1.3, num_patients),  # Random Creatinine levels
+        'AST': np.random.uniform(10, 40, num_patients),  # Random Aspartate aminotransferase levels
+        'ALT': np.random.uniform(7, 56, num_patients),  # Random Alanine aminotransferase levels
+        'Glu': np.random.uniform(70, 100, num_patients),  # Random Glucose levels
+        'CRP': np.random.uniform(0, 1, num_patients),  # Random C-reactive protein levels
+        'TG': np.random.uniform(50, 150, num_patients),  # Random Triglycerides levels
+        'HDL': np.random.uniform(40, 60, num_patients),  # Random High-density lipoprotein levels
+        'LDL': np.random.uniform(70, 130, num_patients),  # Random Low-density lipoprotein levels
+        'Testosterone': np.random.uniform(300, 1000, num_patients)  # Random Testosterone levels
+    }
+
+    # Convert dictionary to DataFrame
+    df = pd.DataFrame(patient_data)
+
+    # Calculate BMI for each patient
+    df['BMI'] = df.apply(lambda row: calculate_bmi(row['Height_cm'], row['Weight_kg']), axis=1)
+    
+    return df
+
+# Generate data for 100 patients
+num_patients = 100
+patient_df = collect_blood_data(num_patients)
+
+# Display the data
+import ace_tools as tools; tools.display_dataframe_to_user(name="Patient Blood Data", dataframe=patient_df)
